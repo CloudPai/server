@@ -398,11 +398,12 @@ __webpack_require__.r(__webpack_exports__);
 /*!******************************************************************!*\
   !*** ./apps/weather_status/src/services/weatherStatusService.js ***!
   \******************************************************************/
-/*! exports provided: getLocation, setLocation, setAddress, fetchForecast */
+/*! exports provided: setMode, getLocation, setLocation, setAddress, fetchForecast */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setMode", function() { return setMode; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getLocation", function() { return getLocation; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setLocation", function() { return setLocation; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setAddress", function() { return setAddress; });
@@ -479,7 +480,6 @@ var setLocation = /*#__PURE__*/function () {
 }();
 /**
  *
- *
  * @param {String} address The location
  * @returns {Promise<Object>}
  */
@@ -495,7 +495,9 @@ var setAddress = /*#__PURE__*/function () {
             url = Object(_nextcloud_router__WEBPACK_IMPORTED_MODULE_1__["generateOcsUrl"])('apps/weather_status/api/v1', 2) + 'location';
             _context2.next = 3;
             return _nextcloud_axios__WEBPACK_IMPORTED_MODULE_0___default.a.put(url, {
-              address: address
+              address: address,
+              lat: null,
+              lon: null
             });
 
           case 3:
@@ -515,22 +517,24 @@ var setAddress = /*#__PURE__*/function () {
   };
 }();
 /**
- * Fetches the location information for current user
  *
+ * @param {String} mode can be 1 browser or 2 custom
  * @returns {Promise<Object>}
  */
 
 
-var getLocation = /*#__PURE__*/function () {
-  var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
+var setMode = /*#__PURE__*/function () {
+  var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(mode) {
     var url, response;
     return regeneratorRuntime.wrap(function _callee3$(_context3) {
       while (1) {
         switch (_context3.prev = _context3.next) {
           case 0:
-            url = Object(_nextcloud_router__WEBPACK_IMPORTED_MODULE_1__["generateOcsUrl"])('apps/weather_status/api/v1', 2) + 'location';
+            url = Object(_nextcloud_router__WEBPACK_IMPORTED_MODULE_1__["generateOcsUrl"])('apps/weather_status/api/v1', 2) + 'mode';
             _context3.next = 3;
-            return _nextcloud_axios__WEBPACK_IMPORTED_MODULE_0___default.a.get(url);
+            return _nextcloud_axios__WEBPACK_IMPORTED_MODULE_0___default.a.put(url, {
+              mode: mode
+            });
 
           case 3:
             response = _context3.sent;
@@ -544,26 +548,25 @@ var getLocation = /*#__PURE__*/function () {
     }, _callee3);
   }));
 
-  return function getLocation() {
+  return function setMode(_x4) {
     return _ref3.apply(this, arguments);
   };
 }();
 /**
- * Fetches the weather forecast
+ * Fetches the location information for current user
  *
- * @param {String} address The location
  * @returns {Promise<Object>}
  */
 
 
-var fetchForecast = /*#__PURE__*/function () {
+var getLocation = /*#__PURE__*/function () {
   var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
     var url, response;
     return regeneratorRuntime.wrap(function _callee4$(_context4) {
       while (1) {
         switch (_context4.prev = _context4.next) {
           case 0:
-            url = Object(_nextcloud_router__WEBPACK_IMPORTED_MODULE_1__["generateOcsUrl"])('apps/weather_status/api/v1', 2) + 'forecast';
+            url = Object(_nextcloud_router__WEBPACK_IMPORTED_MODULE_1__["generateOcsUrl"])('apps/weather_status/api/v1', 2) + 'location';
             _context4.next = 3;
             return _nextcloud_axios__WEBPACK_IMPORTED_MODULE_0___default.a.get(url);
 
@@ -579,8 +582,43 @@ var fetchForecast = /*#__PURE__*/function () {
     }, _callee4);
   }));
 
-  return function fetchForecast() {
+  return function getLocation() {
     return _ref4.apply(this, arguments);
+  };
+}();
+/**
+ * Fetches the weather forecast
+ *
+ * @param {String} address The location
+ * @returns {Promise<Object>}
+ */
+
+
+var fetchForecast = /*#__PURE__*/function () {
+  var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
+    var url, response;
+    return regeneratorRuntime.wrap(function _callee5$(_context5) {
+      while (1) {
+        switch (_context5.prev = _context5.next) {
+          case 0:
+            url = Object(_nextcloud_router__WEBPACK_IMPORTED_MODULE_1__["generateOcsUrl"])('apps/weather_status/api/v1', 2) + 'forecast';
+            _context5.next = 3;
+            return _nextcloud_axios__WEBPACK_IMPORTED_MODULE_0___default.a.get(url);
+
+          case 3:
+            response = _context5.sent;
+            return _context5.abrupt("return", response.data.ocs.data);
+
+          case 5:
+          case "end":
+            return _context5.stop();
+        }
+      }
+    }, _callee5);
+  }));
+
+  return function fetchForecast() {
+    return _ref5.apply(this, arguments);
   };
 }();
 
@@ -4844,11 +4882,16 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
+//
+//
+//
 // import { getCurrentUser } from '@nextcloud/auth'
 
 
  // import { generateUrl } from '@nextcloud/router'
 
+var MODE_BROWSER_LOCATION = 1;
+var MODE_MANUAL_LOCATION = 2;
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'App',
   components: {
@@ -4863,6 +4906,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   },
   data: function data() {
     return {
+      mode: MODE_BROWSER_LOCATION,
       address: null,
       lat: null,
       lon: null,
@@ -4932,26 +4976,22 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }
   },
   mounted: function mounted() {
-    // get location info
-    this.getLocation(); // this.changeLocation(43.599, 3.922)
+    // bootstrap: try to get location from browser
+    this.bootstrap(); // get location info
+    // this.getLocation()
+    // this.changeLocation(43.777, 23.922)
     // this.changeLocation(52.3, 5.0)
   },
   methods: {
-    // decide what to do depending on how location is set
-    locationChanged: function locationChanged() {
+    // default mode: browser
+    // get mode
+    // - browser => launch browser
+    // /      if refused or error => warn user and wait for user actions
+    // - manual => get location infos
+    // /      if no info : warn user and wait for manual actions
+    // /      if infos: get forecast
+    bootstrap: function bootstrap() {
       var _this = this;
-
-      clearInterval(this.loop);
-
-      if (this.lat && this.lon || this.address) {
-        this.loop = setInterval(function () {
-          return _this.fetchForecast();
-        }, 60 * 1000 * 60);
-        this.getForecast();
-      }
-    },
-    getLocation: function getLocation() {
-      var _this2 = this;
 
       return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
         var loc;
@@ -4965,32 +5005,70 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
               case 3:
                 loc = _context.sent;
-                _this2.lat = loc.lat;
-                _this2.lon = loc.lon;
-                _this2.address = loc.address;
+                _this.lat = loc.lat;
+                _this.lon = loc.lon;
+                _this.address = loc.address;
+                _this.mode = loc.mode;
+                console.debug('in bootstrap. mode=' + _this.mode + ' latlng: ' + _this.lat + ' ' + _this.lon + ' address: ' + _this.address);
 
-                _this2.locationChanged();
+                if (_this.mode === MODE_BROWSER_LOCATION) {
+                  _this.askBrowserLocation();
+                } else if (_this.mode === MODE_MANUAL_LOCATION) {
+                  _this.startLoop();
+                }
 
-                console.debug(loc);
-                _context.next = 15;
+                _context.next = 16;
                 break;
 
-              case 11:
-                _context.prev = 11;
+              case 12:
+                _context.prev = 12;
                 _context.t0 = _context["catch"](0);
-                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this2.$t('weather_status', 'There was an error getting the forecasts.'));
+                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this.$t('weather_status', 'There was an error getting the weather status information.'));
                 console.debug(_context.t0);
 
-              case 15:
+              case 16:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[0, 11]]);
+        }, _callee, null, [[0, 12]]);
       }))();
     },
-    getForecast: function getForecast() {
+    startLoop: function startLoop() {
+      var _this2 = this;
+
+      clearInterval(this.loop);
+      console.debug('in start loop mode=' + this.mode + ' latlng: ' + this.lat + ' ' + this.lon + ' address: ' + this.address);
+
+      if (this.lat && this.lon) {
+        this.loop = setInterval(function () {
+          return _this2.getForecast();
+        }, 60 * 1000 * 60);
+        this.getForecast();
+      }
+    },
+    askBrowserLocation: function askBrowserLocation() {
       var _this3 = this;
+
+      if (navigator.geolocation && window.isSecureContext) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+          _this3.lat = position.coords.latitude;
+          _this3.lon = position.coords.longitude;
+
+          _this3.saveLocation(_this3.lat, _this3.lon);
+        }, function (error) {
+          console.debug('location permission refused');
+          console.debug(error);
+
+          _this3.startLoop();
+        });
+      } else {
+        console.debug('no secure context!');
+        this.startLoop();
+      }
+    },
+    getForecast: function getForecast() {
+      var _this4 = this;
 
       return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
@@ -5002,14 +5080,14 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 return _services_weatherStatusService__WEBPACK_IMPORTED_MODULE_2__["fetchForecast"]();
 
               case 3:
-                _this3.forecasts = _context2.sent;
+                _this4.forecasts = _context2.sent;
                 _context2.next = 10;
                 break;
 
               case 6:
                 _context2.prev = 6;
                 _context2.t0 = _context2["catch"](0);
-                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this3.$t('weather_status', 'There was an error getting the forecasts.'));
+                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this4.$t('weather_status', 'There was an error getting the forecasts.'));
                 console.debug(_context2.t0);
 
               case 10:
@@ -5020,38 +5098,47 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         }, _callee2, null, [[0, 6]]);
       }))();
     },
-    changeAddress: function changeAddress(address) {
-      var _this4 = this;
+    setAddress: function setAddress(address) {
+      var _this5 = this;
 
       return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
+        var loc;
         return regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
                 _context3.prev = 0;
                 _context3.next = 3;
-                return _services_weatherStatusService__WEBPACK_IMPORTED_MODULE_2__["setLocation"](address);
+                return _services_weatherStatusService__WEBPACK_IMPORTED_MODULE_2__["setAddress"](address);
 
               case 3:
-                _context3.next = 9;
+                loc = _context3.sent;
+                _this5.lat = loc.lat;
+                _this5.lon = loc.lon;
+                _this5.address = loc.address;
+                _this5.mode = MODE_MANUAL_LOCATION;
+
+                _this5.startLoop();
+
+                _context3.next = 15;
                 break;
 
-              case 5:
-                _context3.prev = 5;
+              case 11:
+                _context3.prev = 11;
                 _context3.t0 = _context3["catch"](0);
-                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this4.$t('weather_status', 'There was an error setting the location address.'));
+                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this5.$t('weather_status', 'There was an error setting the location address.'));
                 console.debug(_context3.t0);
 
-              case 9:
+              case 15:
               case "end":
                 return _context3.stop();
             }
           }
-        }, _callee3, null, [[0, 5]]);
+        }, _callee3, null, [[0, 11]]);
       }))();
     },
-    changeLocation: function changeLocation(lat, lon) {
-      var _this5 = this;
+    saveLocation: function saveLocation(lat, lon) {
+      var _this6 = this;
 
       return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
         return regeneratorRuntime.wrap(function _callee4$(_context4) {
@@ -5063,22 +5150,65 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 return _services_weatherStatusService__WEBPACK_IMPORTED_MODULE_2__["setLocation"](lat, lon);
 
               case 3:
-                _context4.next = 9;
+                _this6.startLoop();
+
+                _context4.next = 10;
                 break;
 
-              case 5:
-                _context4.prev = 5;
+              case 6:
+                _context4.prev = 6;
                 _context4.t0 = _context4["catch"](0);
-                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this5.$t('weather_status', 'There was an error setting the location.'));
+                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this6.$t('weather_status', 'There was an error setting the location.'));
                 console.debug(_context4.t0);
 
-              case 9:
+              case 10:
               case "end":
                 return _context4.stop();
             }
           }
-        }, _callee4, null, [[0, 5]]);
+        }, _callee4, null, [[0, 6]]);
       }))();
+    },
+    saveMode: function saveMode(mode) {
+      var _this7 = this;
+
+      return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
+        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                _context5.prev = 0;
+                _context5.next = 3;
+                return _services_weatherStatusService__WEBPACK_IMPORTED_MODULE_2__["setMode"](mode);
+
+              case 3:
+                _context5.next = 9;
+                break;
+
+              case 5:
+                _context5.prev = 5;
+                _context5.t0 = _context5["catch"](0);
+                Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this7.$t('weather_status', 'There was an error saving the mode.'));
+                console.debug(_context5.t0);
+
+              case 9:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5, null, [[0, 5]]);
+      }))();
+    },
+    onCustomAddressClick: function onCustomAddressClick() {
+      this.setAddress('manuuuu');
+    },
+    onBrowserLocationClick: function onBrowserLocationClick() {
+      this.saveMode(MODE_BROWSER_LOCATION);
+      this.mode = MODE_BROWSER_LOCATION;
+      this.askBrowserLocation();
+    },
+    onPersonalAddressClick: function onPersonalAddressClick() {
+      console.debug('NYI');
     }
   }
 });
@@ -47887,7 +48017,10 @@ var render = function() {
           [
             _c(
               "ActionButton",
-              { attrs: { icon: "icon-crosshair", "close-after-click": true } },
+              {
+                attrs: { icon: "icon-crosshair", "close-after-click": true },
+                on: { click: _vm.onBrowserLocationClick }
+              },
               [
                 _vm._v(
                   "\n\t\t\t\t" +
@@ -47899,7 +48032,10 @@ var render = function() {
             _vm._v(" "),
             _c(
               "ActionButton",
-              { attrs: { icon: "icon-settings", "close-after-click": true } },
+              {
+                attrs: { icon: "icon-settings", "close-after-click": true },
+                on: { click: _vm.onPersonalAddressClick }
+              },
               [
                 _vm._v(
                   "\n\t\t\t\t" +
@@ -47913,7 +48049,10 @@ var render = function() {
             _vm._v(" "),
             _c(
               "ActionButton",
-              { attrs: { icon: "icon-rename", "close-after-click": true } },
+              {
+                attrs: { icon: "icon-rename", "close-after-click": true },
+                on: { click: _vm.onCustomAddressClick }
+              },
               [
                 _vm._v(
                   "\n\t\t\t\t" +
@@ -61273,4 +61412,4 @@ module.exports = function(module) {
 /***/ })
 
 /******/ });
-//# sourceMappingURL=weather-status.js.map?v=322179ce682b8eed862d
+//# sourceMappingURL=weather-status.js.map?v=879788749fc67ad0c769

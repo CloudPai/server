@@ -60,6 +60,15 @@ class WeatherStatusController extends OCSController {
 	 *
 	 * @return DataResponse
 	 */
+	public function setMode($mode): DataResponse {
+		return new DataResponse($this->service->setMode($mode));
+	}
+
+	/**
+	 * @NoAdminRequired
+	 *
+	 * @return DataResponse
+	 */
 	public function setLocation($address, $lat, $lon): DataResponse {
 		$currentWeather = $this->service->setLocation($address, $lat, $lon);
 		return new DataResponse($currentWeather);

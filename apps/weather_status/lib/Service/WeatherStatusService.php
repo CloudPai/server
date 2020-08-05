@@ -54,29 +54,48 @@ class WeatherStatusService {
         $this->client = $clientService->newClient();
 	}
 
+	public function setMode(int $mode): array {
+		$this->config->setUserValue($this->userId, 'weather_status', 'mode', $mode);
+		return ['success' => true];
+	}
+
 	/**
 	 */
 	public function setLocation(string $address = '', $lat = null, $lon = null): array {
 		if ($lat !== null and $lon !== null) {
 			$this->config->setUserValue($this->userId, 'weather_status', 'lat', $lat);
 			$this->config->setUserValue($this->userId, 'weather_status', 'lon', $lon);
-			error_log($this->userId.' => '.$lat.'||'.$lon);
+			$this->config->setUserValue($this->userId, 'weather_status', 'address', '');
 		} else if ($address !== '') {
-			$this->setAddress($address);
+			return $this->setAddress($address);
 		} else {
 			return ['success' => false];
 		}
 		return ['success' => true];
 	}
 
+	public function setAddress(string $address): array {
+		$this->config->setUserValue($this->userId, 'weather_status', 'address', $address);
+		$this->config->setUserValue($this->userId, 'weather_status', 'lat', 43.7778);
+		$this->config->setUserValue($this->userId, 'weather_status', 'lon', 23.9221);
+		$this->config->setUserValue($this->userId, 'weather_status', 'mode', 2);
+		return [
+			'lat' => 43.7778,
+			'lon' => 23.9221,
+			'address' => $address,
+		];
+	}
+
 	public function getLocation(): array {
 		$lat = $this->config->getUserValue($this->userId, 'weather_status', 'lat', '');
 		$lon = $this->config->getUserValue($this->userId, 'weather_status', 'lon', '');
 		$address = $this->config->getUserValue($this->userId, 'weather_status', 'address', '');
+		$mode = $this->config->getUserValue($this->userId, 'weather_status', 'mode', 1);
 		return [
 			'lat' => $lat,
 			'lon' => $lon,
 			'address' => $address,
+			'mode' => intval($mode),
 		];
 	}
 

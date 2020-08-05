@@ -42,7 +42,6 @@ const setLocation = async(lat, lon) => {
 
 /**
  *
- *
  * @param {String} address The location
  * @returns {Promise<Object>}
  */
@@ -50,6 +49,22 @@ const setAddress = async(address) => {
 	const url = generateOcsUrl('apps/weather_status/api/v1', 2) + 'location'
 	const response = await HttpClient.put(url, {
 		address,
+		lat: null,
+		lon: null,
+	})
+
+	return response.data.ocs.data
+}
+
+/**
+ *
+ * @param {String} mode can be 1 browser or 2 custom
+ * @returns {Promise<Object>}
+ */
+const setMode = async(mode) => {
+	const url = generateOcsUrl('apps/weather_status/api/v1', 2) + 'mode'
+	const response = await HttpClient.put(url, {
+		mode,
 	})
 
 	return response.data.ocs.data
@@ -81,6 +96,7 @@ const fetchForecast = async() => {
 }
 
 export {
+	setMode,
 	getLocation,
 	setLocation,
 	setAddress,

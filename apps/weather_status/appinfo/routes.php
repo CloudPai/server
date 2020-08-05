@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 return [
 	'ocs' => [
+		['name' => 'WeatherStatus#setMode', 'url' => '/api/v1/mode', 'verb' => 'PUT'],
 		['name' => 'WeatherStatus#getLocation', 'url' => '/api/v1/location', 'verb' => 'GET'],
 		['name' => 'WeatherStatus#setLocation', 'url' => '/api/v1/location', 'verb' => 'PUT'],
 		['name' => 'WeatherStatus#getForecast', 'url' => '/api/v1/forecast', 'verb' => 'GET'],

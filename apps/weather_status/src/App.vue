@@ -28,17 +28,20 @@
 				:menu-title="visibleMessage">
 				<ActionButton
 					icon="icon-crosshair"
-					:close-after-click="true">
+					:close-after-click="true"
+					@click="onBrowserLocationClick">
 					{{ $t('weather_status', 'Detect location') }}
 				</ActionButton>
 				<ActionButton
 					icon="icon-settings"
-					:close-after-click="true">
+					:close-after-click="true"
+					@click="onPersonalAddressClick">
 					{{ $t('weather_status', 'Use personal settings location') }}
 				</ActionButton>
 				<ActionButton
 					icon="icon-rename"
-					:close-after-click="true">
+					:close-after-click="true"
+					@click="onCustomAddressClick">
 					{{ $t('weather_status', 'Set custom location') }}
 				</ActionButton>
 			</Actions>
@@ -53,6 +56,9 @@ import { Actions, ActionButton } from '@nextcloud/vue'
 import * as network from './services/weatherStatusService'
 // import { generateUrl } from '@nextcloud/router'
 
+const MODE_BROWSER_LOCATION = 1
+const MODE_MANUAL_LOCATION = 2
+
 export default {
 	name: 'App',
 	components: {
@@ -66,6 +72,7 @@ export default {
 	},
 	data() {
 		return {
+			mode: MODE_BROWSER_LOCATION,
 			address: null,
 			lat: null,
 			lon: null,
@@ -134,31 +141,63 @@ export default {
 		},
 	},
 	mounted() {
+		// bootstrap: try to get location from browser
+		this.bootstrap()
 		// get location info
-		this.getLocation()
-		// this.changeLocation(43.599, 3.922)
+		// this.getLocation()
+		// this.changeLocation(43.777, 23.922)
 		// this.changeLocation(52.3, 5.0)
 	},
 	methods: {
-		// decide what to do depending on how location is set
-		locationChanged() {
-			clearInterval(this.loop)
-			if ((this.lat && this.lon) || this.address) {
-				this.loop = setInterval(() => this.fetchForecast(), 60 * 1000 * 60)
-				this.getForecast()
-			}
-		},
-		async getLocation() {
+		// default mode: browser
+		// get mode
+		// - browser => launch browser
+		// /      if refused or error => warn user and wait for user actions
+		// - manual => get location infos
+		// /      if no info : warn user and wait for manual actions
+		// /      if infos: get forecast
+		async bootstrap() {
 			try {
 				const loc = await network.getLocation()
 				this.lat = loc.lat
 				this.lon = loc.lon
 				this.address = loc.address
-				this.locationChanged()
-				console.debug(loc)
+				this.mode = loc.mode
+
+				console.debug('in bootstrap. mode=' + this.mode + ' latlng: ' + this.lat + ' ' + this.lon + ' address: ' + this.address)
+				if (this.mode === MODE_BROWSER_LOCATION) {
+					this.askBrowserLocation()
+				} else if (this.mode === MODE_MANUAL_LOCATION) {
+					this.startLoop()
+				}
 			} catch (err) {
-				showError(this.$t('weather_status', 'There was an error getting the forecasts.'))
+				showError(this.$t('weather_status', 'There was an error getting the weather status information.'))
 				console.debug(err)
+			}
+		},
+		startLoop() {
+			clearInterval(this.loop)
+			console.debug('in start loop mode=' + this.mode + ' latlng: ' + this.lat + ' ' + this.lon + ' address: ' + this.address)
+			if (this.lat && this.lon) {
+				this.loop = setInterval(() => this.getForecast(), 60 * 1000 * 60)
+				this.getForecast()
+			}
+		},
+		askBrowserLocation() {
+			if (navigator.geolocation && window.isSecureContext) {
+				navigator.geolocation.getCurrentPosition((position) => {
+					this.lat = position.coords.latitude
+					this.lon = position.coords.longitude
+					this.saveLocation(this.lat, this.lon)
+				},
+				(error) => {
+					console.debug('location permission refused')
+					console.debug(error)
+					this.startLoop()
+				})
+			} else {
+				console.debug('no secure context!')
+				this.startLoop()
 			}
 		},
 		async getForecast() {
@@ -169,21 +208,46 @@ export default {
 				console.debug(err)
 			}
 		},
-		async changeAddress(address) {
+		async setAddress(address) {
 			try {
-				await network.setLocation(address)
+				const loc = await network.setAddress(address)
+				this.lat = loc.lat
+				this.lon = loc.lon
+				this.address = loc.address
+				this.mode = MODE_MANUAL_LOCATION
+				this.startLoop()
 			} catch (err) {
 				showError(this.$t('weather_status', 'There was an error setting the location address.'))
 				console.debug(err)
 			}
 		},
-		async changeLocation(lat, lon) {
+		async saveLocation(lat, lon) {
 			try {
 				await network.setLocation(lat, lon)
+				this.startLoop()
 			} catch (err) {
 				showError(this.$t('weather_status', 'There was an error setting the location.'))
 				console.debug(err)
 			}
+		},
+		async saveMode(mode) {
+			try {
+				await network.setMode(mode)
+			} catch (err) {
+				showError(this.$t('weather_status', 'There was an error saving the mode.'))
+				console.debug(err)
+			}
+		},
+		onCustomAddressClick() {
+			this.setAddress('manuuuu')
+		},
+		onBrowserLocationClick() {
+			this.saveMode(MODE_BROWSER_LOCATION)
+			this.mode = MODE_BROWSER_LOCATION
+			this.askBrowserLocation()
+		},
+		onPersonalAddressClick() {
+			console.debug('NYI')
 		},
 	},
 }

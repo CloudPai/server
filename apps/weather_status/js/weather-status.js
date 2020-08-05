@@ -4885,10 +4885,18 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
-// import { getCurrentUser } from '@nextcloud/auth'
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
- // import { generateUrl } from '@nextcloud/router'
 
 var MODE_BROWSER_LOCATION = 1;
 var MODE_MANUAL_LOCATION = 2;
@@ -4896,7 +4904,9 @@ var MODE_MANUAL_LOCATION = 2;
   name: 'App',
   components: {
     Actions: _nextcloud_vue__WEBPACK_IMPORTED_MODULE_1__["Actions"],
-    ActionButton: _nextcloud_vue__WEBPACK_IMPORTED_MODULE_1__["ActionButton"]
+    ActionButton: _nextcloud_vue__WEBPACK_IMPORTED_MODULE_1__["ActionButton"],
+    ActionInput: _nextcloud_vue__WEBPACK_IMPORTED_MODULE_1__["ActionInput"],
+    ActionLink: _nextcloud_vue__WEBPACK_IMPORTED_MODULE_1__["ActionLink"]
   },
   props: {
     inline: {
@@ -4978,6 +4988,9 @@ var MODE_MANUAL_LOCATION = 2;
      */
     visibleMessage: function visibleMessage() {
       return this.sixHoursWeatherForecast ? this.sixHoursTempForecast + '° ' + this.weatherText : '';
+    },
+    weatherLinkTarget: function weatherLinkTarget() {
+      return 'https://www.windy.com/-Rain-thunder-rain?rain,' + this.lat + ',' + this.lon + ',11';
     }
   },
   mounted: function mounted() {
@@ -5049,6 +5062,7 @@ var MODE_MANUAL_LOCATION = 2;
 
       if (navigator.geolocation && window.isSecureContext) {
         navigator.geolocation.getCurrentPosition(function (position) {
+          console.debug('browser location success');
           _this3.lat = position.coords.latitude;
           _this3.lon = position.coords.longitude;
 
@@ -5153,6 +5167,7 @@ var MODE_MANUAL_LOCATION = 2;
       var _this6 = this;
 
       return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
+        var loc;
         return regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
@@ -5162,23 +5177,26 @@ var MODE_MANUAL_LOCATION = 2;
                 return _services_weatherStatusService__WEBPACK_IMPORTED_MODULE_2__["setLocation"](lat, lon);
 
               case 3:
+                loc = _context4.sent;
+                _this6.address = loc.address;
+
                 _this6.startLoop();
 
-                _context4.next = 10;
+                _context4.next = 12;
                 break;
 
-              case 6:
-                _context4.prev = 6;
+              case 8:
+                _context4.prev = 8;
                 _context4.t0 = _context4["catch"](0);
                 Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this6.$t('weather_status', 'There was an error setting the location.'));
                 console.debug(_context4.t0);
 
-              case 10:
+              case 12:
               case "end":
                 return _context4.stop();
             }
           }
-        }, _callee4, null, [[0, 6]]);
+        }, _callee4, null, [[0, 8]]);
       }))();
     },
     saveMode: function saveMode(mode) {
@@ -5219,6 +5237,10 @@ var MODE_MANUAL_LOCATION = 2;
     },
     onPersonalAddressClick: function onPersonalAddressClick() {
       console.debug('NYI');
+    },
+    onAddressSubmit: function onAddressSubmit() {
+      var newAddress = this.$refs.addressInput.$el.querySelector('input[type="text"]').value;
+      this.setAddress(newAddress);
     }
   }
 });
@@ -48025,6 +48047,21 @@ var render = function() {
             }
           },
           [
+            _vm.address
+              ? _c(
+                  "ActionLink",
+                  {
+                    attrs: {
+                      icon: "icon-address",
+                      target: "_blank",
+                      href: _vm.weatherLinkTarget,
+                      "close-after-click": true
+                    }
+                  },
+                  [_vm._v("\n\t\t\t\t" + _vm._s(_vm.address) + "\n\t\t\t")]
+                )
+              : _vm._e(),
+            _vm._v(" "),
             _c(
               "ActionButton",
               {
@@ -48035,6 +48072,27 @@ var render = function() {
                 _vm._v(
                   "\n\t\t\t\t" +
                     _vm._s(_vm.$t("weather_status", "Detect location")) +
+                    "\n\t\t\t"
+                )
+              ]
+            ),
+            _vm._v(" "),
+            _c(
+              "ActionInput",
+              {
+                ref: "addressInput",
+                attrs: {
+                  disabled: false,
+                  icon: "icon-rename",
+                  type: "text",
+                  value: ""
+                },
+                on: { submit: _vm.onAddressSubmit }
+              },
+              [
+                _vm._v(
+                  "\n\t\t\t\t" +
+                    _vm._s(_vm.$t("weather_status", "Set custom address")) +
                     "\n\t\t\t"
                 )
               ]
@@ -48052,21 +48110,6 @@ var render = function() {
                     _vm._s(
                       _vm.$t("weather_status", "Use personal settings location")
                     ) +
-                    "\n\t\t\t"
-                )
-              ]
-            ),
-            _vm._v(" "),
-            _c(
-              "ActionButton",
-              {
-                attrs: { icon: "icon-rename", "close-after-click": true },
-                on: { click: _vm.onCustomAddressClick }
-              },
-              [
-                _vm._v(
-                  "\n\t\t\t\t" +
-                    _vm._s(_vm.$t("weather_status", "Set custom location")) +
                     "\n\t\t\t"
                 )
               ]
@@ -61422,4 +61465,4 @@ module.exports = function(module) {
 /***/ })
 
 /******/ });
-//# sourceMappingURL=weather-status.js.map?v=3424d0b0ee42c2135d05
+//# sourceMappingURL=weather-status.js.map?v=a7974dd50cd98b4611e6

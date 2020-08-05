@@ -26,23 +26,33 @@
 				id="weather-status-menu-item__subheader"
 				:default-icon="weatherIcon"
 				:menu-title="visibleMessage">
+				<ActionLink v-if="address"
+					icon="icon-address"
+					target="_blank"
+					:href="weatherLinkTarget"
+					:close-after-click="true">
+					{{ address }}
+				</ActionLink>
 				<ActionButton
 					icon="icon-crosshair"
 					:close-after-click="true"
 					@click="onBrowserLocationClick">
 					{{ $t('weather_status', 'Detect location') }}
 				</ActionButton>
+				<ActionInput
+					ref="addressInput"
+					:disabled="false"
+					icon="icon-rename"
+					type="text"
+					value=""
+					@submit="onAddressSubmit">
+					{{ $t('weather_status', 'Set custom address') }}
+				</ActionInput>
 				<ActionButton
 					icon="icon-settings"
 					:close-after-click="true"
 					@click="onPersonalAddressClick">
 					{{ $t('weather_status', 'Use personal settings location') }}
-				</ActionButton>
-				<ActionButton
-					icon="icon-rename"
-					:close-after-click="true"
-					@click="onCustomAddressClick">
-					{{ $t('weather_status', 'Set custom location') }}
 				</ActionButton>
 			</Actions>
 		</div>
@@ -50,11 +60,9 @@
 </template>
 
 <script>
-// import { getCurrentUser } from '@nextcloud/auth'
 import { showError } from '@nextcloud/dialogs'
-import { Actions, ActionButton } from '@nextcloud/vue'
+import { Actions, ActionButton, ActionInput, ActionLink } from '@nextcloud/vue'
 import * as network from './services/weatherStatusService'
-// import { generateUrl } from '@nextcloud/router'
 
 const MODE_BROWSER_LOCATION = 1
 const MODE_MANUAL_LOCATION = 2
@@ -62,7 +70,7 @@ const MODE_MANUAL_LOCATION = 2
 export default {
 	name: 'App',
 	components: {
-		Actions, ActionButton,
+		Actions, ActionButton, ActionInput, ActionLink,
 	},
 	props: {
 		inline: {
@@ -144,6 +152,9 @@ export default {
 		visibleMessage() {
 			return this.sixHoursWeatherForecast ? this.sixHoursTempForecast + '° ' + this.weatherText : ''
 		},
+		weatherLinkTarget() {
+			return 'https://www.windy.com/-Rain-thunder-rain?rain,' + this.lat + ',' + this.lon + ',11'
+		},
 	},
 	mounted() {
 		// bootstrap: try to get location from browser
@@ -181,6 +192,7 @@ export default {
 			this.loading = true
 			if (navigator.geolocation && window.isSecureContext) {
 				navigator.geolocation.getCurrentPosition((position) => {
+					console.debug('browser location success')
 					this.lat = position.coords.latitude
 					this.lon = position.coords.longitude
 					this.saveMode(MODE_BROWSER_LOCATION)
@@ -227,7 +239,8 @@ export default {
 		},
 		async saveLocation(lat, lon) {
 			try {
-				await network.setLocation(lat, lon)
+				const loc = await network.setLocation(lat, lon)
+				this.address = loc.address
 				this.startLoop()
 			} catch (err) {
 				showError(this.$t('weather_status', 'There was an error setting the location.'))
@@ -250,6 +263,10 @@ export default {
 		},
 		onPersonalAddressClick() {
 			console.debug('NYI')
+		},
+		onAddressSubmit() {
+			const newAddress = this.$refs.addressInput.$el.querySelector('input[type="text"]').value
+			this.setAddress(newAddress)
 		},
 	},
 }

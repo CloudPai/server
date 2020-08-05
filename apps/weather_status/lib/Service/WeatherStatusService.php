@@ -27,6 +27,7 @@ namespace OCA\WeatherStatus\Service;
 
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
+use OCP\IL10N;
 use OCP\Http\Client\IClientService;
 
 /**
@@ -46,10 +47,12 @@ class WeatherStatusService {
 	public function __construct(ITimeFactory $timeFactory,
 								IClientService $clientService,
 								IConfig $config,
+								IL10N $l10n,
 								string $userId) {
 		$this->timeFactory = $timeFactory;
 		$this->config = $config;
 		$this->userId = $userId;
+		$this->l10n = $l10n;
 		$this->clientService = $clientService;
         $this->client = $clientService->newClient();
 	}
@@ -65,25 +68,65 @@ class WeatherStatusService {
 		if ($lat !== null and $lon !== null) {
 			$this->config->setUserValue($this->userId, 'weather_status', 'lat', $lat);
 			$this->config->setUserValue($this->userId, 'weather_status', 'lon', $lon);
-			$this->config->setUserValue($this->userId, 'weather_status', 'address', '');
+			$address = $this->resolveLocation($lat, $lon);
+			$address = $address ? $address : $this->l10n->t('Unknown address');
+			$this->config->setUserValue($this->userId, 'weather_status', 'address', $address);
+			return [
+				'address' => $address,
+			];
 		} else if ($address !== '') {
 			return $this->setAddress($address);
 		} else {
 			return ['success' => false];
 		}
-		return ['success' => true];
+	}
+
+	private function resolveLocation($lat, $lon) {
+		$params = [
+			'lat' => $lat,
+			'lon' => $lon,
+			'addressdetails' => 1,
+			'format' => 'json',
+		];
+		$url = 'https://nominatim.openstreetmap.org/reverse';
+		$result = $this->requestJSON($url, $params);
+		if (isset($result['display_name'])) {
+			return $result['display_name'];
+		}
+		return null;
 	}
 
 	public function setAddress(string $address): array {
-		$this->config->setUserValue($this->userId, 'weather_status', 'address', $address);
-		$this->config->setUserValue($this->userId, 'weather_status', 'lat', 43.7778);
-		$this->config->setUserValue($this->userId, 'weather_status', 'lon', 23.9221);
-		$this->config->setUserValue($this->userId, 'weather_status', 'mode', 2);
-		return [
-			'lat' => 43.7778,
-			'lon' => 23.9221,
-			'address' => $address,
+		$addressInfo = $this->searchForAddress($address);
+		if (isset($addressInfo['display_name']) and isset($addressInfo['lat']) and isset($addressInfo['lon'])) {
+			$this->config->setUserValue($this->userId, 'weather_status', 'address', $addressInfo['display_name']);
+			$this->config->setUserValue($this->userId, 'weather_status', 'lat', $addressInfo['lat']);
+			$this->config->setUserValue($this->userId, 'weather_status', 'lon', $addressInfo['lon']);
+			$this->config->setUserValue($this->userId, 'weather_status', 'mode', 2);
+			return [
+				'lat' => $addressInfo['lat'],
+				'lon' => $addressInfo['lon'],
+				'address' => $addressInfo['display_name'],
+			];
+		} else {
+			return ['success' => false];
+		}
+	}
+
+	private function searchForAddress(string $address): array {
+		$params = [
+			'format' => 'json',
+			'addressdetails' => '1',
+			'extratags' => '1',
+			'namedetails' => '1',
+			'limit' => '1',
 		];
+		$url = 'https://nominatim.openstreetmap.org/search/' . $address;
+		$results = $this->requestJSON($url, $params);
+		if (is_array($results) and count($results) > 0) {
+			return $results[0];
+		}
+		return ['error' => $this->l10n->t('No result.')];
 	}
 
 	public function getLocation(): array {
@@ -103,19 +146,27 @@ class WeatherStatusService {
 		$lat = $this->config->getUserValue($this->userId, 'weather_status', 'lat', '');
 		$lon = $this->config->getUserValue($this->userId, 'weather_status', 'lon', '');
 		if (is_numeric($lat) and is_numeric($lon)) {
-			return $this->request(floatval($lat), floatval($lon));
+			return $this->forecastRequest(floatval($lat), floatval($lon));
 		} else {
 			return ['success' => false];
 		}
 	}
 
-	private function request(float $lat, float $lon, int $nbValues = 10): array {
+	private function forecastRequest(float $lat, float $lon, int $nbValues = 10): array {
 		$params = [
 			'lat' => $lat,
 			'lon' => $lon,
 		];
+		$url = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
+		$weather = $this->requestJSON($url, $params);
+		if (isset($weather['properties']) and isset($weather['properties']['timeseries']) and is_array($weather['properties']['timeseries'])) {
+			return array_slice($weather['properties']['timeseries'], 0, $nbValues);
+		}
+		return ['error' => $this->l10n->t('Malformed JSON data.')];
+	}
+
+	private function requestJSON($url, $params = []) {
 		try {
-            $url = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
             $options = [
                 'headers' => [
                     'User-Agent' => 'Nextcloud weather status'
@@ -134,14 +185,10 @@ class WeatherStatusService {
             if ($respCode >= 400) {
                 return ['error' => $this->l10n->t('Error')];
             } else {
-				$weather = json_decode($body, true);
-				if (isset($weather['properties']) and isset($weather['properties']['timeseries']) and is_array($weather['properties']['timeseries'])) {
-					return array_slice($weather['properties']['timeseries'], 0, $nbValues);
-				}
-                return ['error' => $this->l10n->t('Malformed JSON data.')];
+				return json_decode($body, true);
             }
         } catch (\Exception $e) {
-            $this->logger->warning('Reddit API error : '.$e, array('app' => $this->appName));
+            $this->logger->warning($url . 'API error : ' . $e, array('app' => $this->appName));
             $response = $e->getResponse();
 			$headers = $response->getHeaders();
 			return ['error' => $e];

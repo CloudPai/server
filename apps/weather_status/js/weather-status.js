@@ -4906,6 +4906,7 @@ var MODE_MANUAL_LOCATION = 2;
   },
   data: function data() {
     return {
+      loading: true,
       mode: MODE_BROWSER_LOCATION,
       address: null,
       lat: null,
@@ -4956,14 +4957,18 @@ var MODE_MANUAL_LOCATION = 2;
     sixHoursTempForecast: function sixHoursTempForecast() {
       return this.forecasts.length > 5 ? this.forecasts[5].data.instant.details.air_temperature : '';
     },
-    sixHoursRainForecast: function sixHoursRainForecast() {
+    sixHoursWeatherForecast: function sixHoursWeatherForecast() {
       return this.forecasts.length > 5 ? this.forecasts[5].data.next_1_hours.summary.symbol_code : '';
     },
-    rainIcon: function rainIcon() {
-      return this.sixHoursRainForecast ? this.icons[this.sixHoursRainForecast] : 'icon-loading-small';
+    weatherIcon: function weatherIcon() {
+      if (this.loading) {
+        return 'icon-loading-small';
+      } else {
+        return this.sixHoursWeatherForecast ? this.icons[this.sixHoursWeatherForecast] : 'icon-info';
+      }
     },
     weatherText: function weatherText() {
-      return this.sixHoursRainForecast ? this.texts[this.sixHoursRainForecast] : '???';
+      return this.sixHoursWeatherForecast ? this.texts[this.sixHoursWeatherForecast] : '???';
     },
 
     /**
@@ -4972,24 +4977,14 @@ var MODE_MANUAL_LOCATION = 2;
      * @returns {String}
      */
     visibleMessage: function visibleMessage() {
-      return this.sixHoursRainForecast ? this.sixHoursTempForecast + '° ' + this.weatherText : '';
+      return this.sixHoursWeatherForecast ? this.sixHoursTempForecast + '° ' + this.weatherText : '';
     }
   },
   mounted: function mounted() {
     // bootstrap: try to get location from browser
-    this.bootstrap(); // get location info
-    // this.getLocation()
-    // this.changeLocation(43.777, 23.922)
-    // this.changeLocation(52.3, 5.0)
+    this.bootstrap();
   },
   methods: {
-    // default mode: browser
-    // get mode
-    // - browser => launch browser
-    // /      if refused or error => warn user and wait for user actions
-    // - manual => get location infos
-    // /      if no info : warn user and wait for manual actions
-    // /      if infos: get forecast
     bootstrap: function bootstrap() {
       var _this = this;
 
@@ -5050,20 +5045,32 @@ var MODE_MANUAL_LOCATION = 2;
     askBrowserLocation: function askBrowserLocation() {
       var _this3 = this;
 
+      this.loading = true;
+
       if (navigator.geolocation && window.isSecureContext) {
         navigator.geolocation.getCurrentPosition(function (position) {
           _this3.lat = position.coords.latitude;
           _this3.lon = position.coords.longitude;
+
+          _this3.saveMode(MODE_BROWSER_LOCATION);
+
+          _this3.mode = MODE_BROWSER_LOCATION;
 
           _this3.saveLocation(_this3.lat, _this3.lon);
         }, function (error) {
           console.debug('location permission refused');
           console.debug(error);
 
+          _this3.saveMode(MODE_MANUAL_LOCATION);
+
+          _this3.mode = MODE_MANUAL_LOCATION;
+
           _this3.startLoop();
         });
       } else {
         console.debug('no secure context!');
+        this.saveMode(MODE_MANUAL_LOCATION);
+        this.mode = MODE_MANUAL_LOCATION;
         this.startLoop();
       }
     },
@@ -5091,6 +5098,9 @@ var MODE_MANUAL_LOCATION = 2;
                 console.debug(_context2.t0);
 
               case 10:
+                _this4.loading = false;
+
+              case 11:
               case "end":
                 return _context2.stop();
             }
@@ -5107,11 +5117,12 @@ var MODE_MANUAL_LOCATION = 2;
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
-                _context3.prev = 0;
-                _context3.next = 3;
+                _this5.loading = true;
+                _context3.prev = 1;
+                _context3.next = 4;
                 return _services_weatherStatusService__WEBPACK_IMPORTED_MODULE_2__["setAddress"](address);
 
-              case 3:
+              case 4:
                 loc = _context3.sent;
                 _this5.lat = loc.lat;
                 _this5.lon = loc.lon;
@@ -5120,21 +5131,22 @@ var MODE_MANUAL_LOCATION = 2;
 
                 _this5.startLoop();
 
-                _context3.next = 15;
+                _context3.next = 17;
                 break;
 
-              case 11:
-                _context3.prev = 11;
-                _context3.t0 = _context3["catch"](0);
+              case 12:
+                _context3.prev = 12;
+                _context3.t0 = _context3["catch"](1);
                 Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_0__["showError"])(_this5.$t('weather_status', 'There was an error setting the location address.'));
                 console.debug(_context3.t0);
+                _this5.loading = false;
 
-              case 15:
+              case 17:
               case "end":
                 return _context3.stop();
             }
           }
-        }, _callee3, null, [[0, 11]]);
+        }, _callee3, null, [[1, 12]]);
       }))();
     },
     saveLocation: function saveLocation(lat, lon) {
@@ -5203,8 +5215,6 @@ var MODE_MANUAL_LOCATION = 2;
       this.setAddress('manuuuu');
     },
     onBrowserLocationClick: function onBrowserLocationClick() {
-      this.saveMode(MODE_BROWSER_LOCATION);
-      this.mode = MODE_BROWSER_LOCATION;
       this.askBrowserLocation();
     },
     onPersonalAddressClick: function onPersonalAddressClick() {
@@ -48010,7 +48020,7 @@ var render = function() {
           {
             attrs: {
               id: "weather-status-menu-item__subheader",
-              "default-icon": _vm.rainIcon,
+              "default-icon": _vm.weatherIcon,
               "menu-title": _vm.visibleMessage
             }
           },
@@ -61412,4 +61422,4 @@ module.exports = function(module) {
 /***/ })
 
 /******/ });
-//# sourceMappingURL=weather-status.js.map?v=879788749fc67ad0c769
+//# sourceMappingURL=weather-status.js.map?v=3424d0b0ee42c2135d05

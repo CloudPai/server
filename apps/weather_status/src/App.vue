@@ -24,7 +24,7 @@
 		<div id="weather-status-menu-item">
 			<Actions
 				id="weather-status-menu-item__subheader"
-				:default-icon="rainIcon"
+				:default-icon="weatherIcon"
 				:menu-title="visibleMessage">
 				<ActionButton
 					icon="icon-crosshair"
@@ -72,6 +72,7 @@ export default {
 	},
 	data() {
 		return {
+			loading: true,
 			mode: MODE_BROWSER_LOCATION,
 			address: null,
 			lat: null,
@@ -122,14 +123,18 @@ export default {
 		sixHoursTempForecast() {
 			return this.forecasts.length > 5 ? this.forecasts[5].data.instant.details.air_temperature : ''
 		},
-		sixHoursRainForecast() {
+		sixHoursWeatherForecast() {
 			return this.forecasts.length > 5 ? this.forecasts[5].data.next_1_hours.summary.symbol_code : ''
 		},
-		rainIcon() {
-			return this.sixHoursRainForecast ? this.icons[this.sixHoursRainForecast] : 'icon-loading-small'
+		weatherIcon() {
+			if (this.loading) {
+				return 'icon-loading-small'
+			} else {
+				return this.sixHoursWeatherForecast ? this.icons[this.sixHoursWeatherForecast] : 'icon-info'
+			}
 		},
 		weatherText() {
-			return this.sixHoursRainForecast ? this.texts[this.sixHoursRainForecast] : '???'
+			return this.sixHoursWeatherForecast ? this.texts[this.sixHoursWeatherForecast] : '???'
 		},
 		/**
 		 * The message displayed in the top right corner
@@ -137,25 +142,14 @@ export default {
 		 * @returns {String}
 		 */
 		visibleMessage() {
-			return this.sixHoursRainForecast ? this.sixHoursTempForecast + '° ' + this.weatherText : ''
+			return this.sixHoursWeatherForecast ? this.sixHoursTempForecast + '° ' + this.weatherText : ''
 		},
 	},
 	mounted() {
 		// bootstrap: try to get location from browser
 		this.bootstrap()
-		// get location info
-		// this.getLocation()
-		// this.changeLocation(43.777, 23.922)
-		// this.changeLocation(52.3, 5.0)
 	},
 	methods: {
-		// default mode: browser
-		// get mode
-		// - browser => launch browser
-		// /      if refused or error => warn user and wait for user actions
-		// - manual => get location infos
-		// /      if no info : warn user and wait for manual actions
-		// /      if infos: get forecast
 		async bootstrap() {
 			try {
 				const loc = await network.getLocation()
@@ -184,19 +178,26 @@ export default {
 			}
 		},
 		askBrowserLocation() {
+			this.loading = true
 			if (navigator.geolocation && window.isSecureContext) {
 				navigator.geolocation.getCurrentPosition((position) => {
 					this.lat = position.coords.latitude
 					this.lon = position.coords.longitude
+					this.saveMode(MODE_BROWSER_LOCATION)
+					this.mode = MODE_BROWSER_LOCATION
 					this.saveLocation(this.lat, this.lon)
 				},
 				(error) => {
 					console.debug('location permission refused')
 					console.debug(error)
+					this.saveMode(MODE_MANUAL_LOCATION)
+					this.mode = MODE_MANUAL_LOCATION
 					this.startLoop()
 				})
 			} else {
 				console.debug('no secure context!')
+				this.saveMode(MODE_MANUAL_LOCATION)
+				this.mode = MODE_MANUAL_LOCATION
 				this.startLoop()
 			}
 		},
@@ -207,8 +208,10 @@ export default {
 				showError(this.$t('weather_status', 'There was an error getting the forecasts.'))
 				console.debug(err)
 			}
+			this.loading = false
 		},
 		async setAddress(address) {
+			this.loading = true
 			try {
 				const loc = await network.setAddress(address)
 				this.lat = loc.lat
@@ -219,6 +222,7 @@ export default {
 			} catch (err) {
 				showError(this.$t('weather_status', 'There was an error setting the location address.'))
 				console.debug(err)
+				this.loading = false
 			}
 		},
 		async saveLocation(lat, lon) {
@@ -242,8 +246,6 @@ export default {
 			this.setAddress('manuuuu')
 		},
 		onBrowserLocationClick() {
-			this.saveMode(MODE_BROWSER_LOCATION)
-			this.mode = MODE_BROWSER_LOCATION
 			this.askBrowserLocation()
 		},
 		onPersonalAddressClick() {
